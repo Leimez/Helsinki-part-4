@@ -1,47 +1,81 @@
 const express = require('express')
 const mongoose = require('mongoose')
+const Blog = require('./models/blog')
 
 const app = express()
 
-const blogSchema = new mongoose.Schema({
-  title: String,
-  author: String,
-  url: String,
-  likes: Number
-})
+const { PORT } = require('./utils/config')
 
-const Blog = mongoose.model('Blog', blogSchema)
+const connectToDatabase = async () => {
+  try {
+    const mongoUrl = 'mongodb://localhost:27017/bloglist'
+    console.log(`Using in-memory MongoDB at: ${mongoUrl}`)
 
-const mongoUrl = 'mongodb://localhost/bloglist'
+    mongoose.connection.on('error', err => {
+      console.error('MongoDB connection error:', err)
+    })
 
-mongoose.connect(mongoUrl)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(error => console.error('Error connecting to MongoDB:', error.message))
+    const connectionOptions = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 120000,
+      socketTimeoutMS: 180000,
+      connectTimeoutMS: 120000,
+      retryWrites: true,
+      retryReads: true,
+      poolSize: 30,
+      bufferCommands: false,
+      connectWithNoPrimary: false,
+      heartbeatFrequencyMS: 2000,
+      family: 4,
+      keepAlive: true,
+      keepAliveInitialDelay: 300000,
+      waitQueueTimeoutMS: 90000,
+      maxIdleTimeMS: 60000,
+      minPoolSize: 10,
+      directConnection: true
+    }
+
+    await mongoose.connect(mongoUrl, connectionOptions)
+    mongoose.set('bufferCommands', false)
+
+    await Blog.createIndexes()
+    console.log('Successfully connected to MongoDB')
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error.message)
+    console.log('Please make sure MongoDB is running')
+    console.log('You can:')
+    console.log('1. Install MongoDB locally (https://docs.mongodb.com/manual/installation/)')
+    console.log('2. Use a cloud MongoDB service like MongoDB Atlas')
+    console.log('3. Set MONGODB_URI environment variable to your connection string')
+    process.exit(1)
+  }
+}
+
+const MAX_RETRIES = 3
+const RETRY_DELAY = 2000
+let retryCount = 0
+
+const startServer = async () => {
+  try {
+    await connectToDatabase()
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`)
+    })
+  } catch (error) {
+    if (retryCount < MAX_RETRIES) {
+      retryCount++
+      console.log(`Connection failed. Retrying (${retryCount}/${MAX_RETRIES})...`)
+      setTimeout(startServer, RETRY_DELAY)
+    } else {
+      console.error('Failed to connect to MongoDB after multiple attempts')
+      process.exit(1)
+    }
+  }
+}
+
+startServer()
 
 app.use(express.json())
+app.use('/api/blogs', require('./controllers/blogs'))
 
-app.get('/api/blogs', async (request, response) => {
-  try {
-    const blogs = await Blog.find({})
-    response.json(blogs)
-  } catch (error) {
-    console.error('Error fetching blogs:', error)
-    response.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-app.post('/api/blogs', async (request, response) => {
-  try {
-    const blog = new Blog(request.body)
-    const savedBlog = await blog.save()
-    response.status(201).json(savedBlog)
-  } catch (error) {
-    console.error('Error saving blog:', error)
-    response.status(400).json({ error: 'Bad request' })
-  }
-})
-
-const PORT = 3003
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
