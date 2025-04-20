@@ -131,3 +131,56 @@ describe('most blogs', () => {
     assert.strictEqual(result, null)
   })
 })
+
+describe('most likes', () => {
+  const listWithOneBlog = [
+    {
+      author: 'Edsger W. Dijkstra',
+      title: 'Go To Statement Considered Harmful',
+      likes: 5
+    }
+  ]
+
+  const listWithMultipleBlogs = [
+    {
+      author: 'Edsger W. Dijkstra',
+      title: 'Blog 1',
+      likes: 5
+    },
+    {
+      author: 'Michael Chan',
+      title: 'Blog 2',
+      likes: 7
+    },
+    {
+      author: 'Edsger W. Dijkstra',
+      title: 'Blog 3',
+      likes: 12
+    }
+  ]
+
+  test('when list has only one blog returns the author and likes of that blog', () => {
+    const result = listHelper.mostLikes(listWithOneBlog)
+    assert.deepStrictEqual(result, { author: 'Edsger W. Dijkstra', likes: 5 })
+  })
+
+  test('when list has multiple blogs returns the author with most total likes and the sum', () => {
+    const result = listHelper.mostLikes(listWithMultipleBlogs)
+    assert.deepStrictEqual(result, { author: 'Edsger W. Dijkstra', likes: 17 })
+  })
+
+  test('when multiple authors have the same total likes returns one of them', () => {
+    const listWithTie = [
+      { author: 'Author A', likes: 10 },
+      { author: 'Author B', likes: 10 }
+    ]
+    const result = listHelper.mostLikes(listWithTie)
+    assert.ok(result.author === 'Author A' || result.author === 'Author B')
+    assert.strictEqual(result.likes, 10)
+  })
+
+  test('when list is empty returns null', () => {
+    const result = listHelper.mostLikes([])
+    assert.strictEqual(result, null)
+  })
+})
