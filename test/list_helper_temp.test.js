@@ -1,6 +1,6 @@
 const { test, describe } = require('node:test')
 const assert = require('node:assert')
-const listHelper = require('../utils/list_helper')
+const listHelper = require('../utils/list_helper_temp')
 
 describe('favorite blog', () => {
   const listWithOneBlog = [
@@ -72,5 +72,62 @@ describe('favorite blog', () => {
     ]
     const result = listHelper.favoriteBlog(listWithSameLikes)
     assert.ok(result._id === listWithSameLikes[0]._id || result._id === listWithSameLikes[1]._id)
+  })
+})
+
+describe('most blogs', () => {
+  const listWithMultipleBlogs = [
+    {
+      author: 'Robert C. Martin',
+      title: 'Blog 1',
+      likes: 2
+    },
+    {
+      author: 'Robert C. Martin',
+      title: 'Blog 2',
+      likes: 3
+    },
+    {
+      author: 'Michael Chan',
+      title: 'Blog 3',
+      likes: 5
+    },
+    {
+      author: 'Robert C. Martin',
+      title: 'Blog 4',
+      likes: 1
+    },
+    {
+      author: 'Edsger W. Dijkstra',
+      title: 'Blog 5',
+      likes: 4
+    },
+    {
+      author: 'Michael Chan',
+      title: 'Blog 6',
+      likes: 2
+    }
+  ]
+
+  test('when list has multiple blogs returns the author with most blogs and the count', () => {
+    const result = listHelper.mostBlogs(listWithMultipleBlogs)
+    assert.deepStrictEqual(result, { author: 'Robert C. Martin', blogs: 3 })
+  })
+
+  test('when list has multiple authors tied for most blogs returns one of them', () => {
+    const listWithTie = [
+      { author: 'Author A', title: 'Blog A' },
+      { author: 'Author A', title: 'Blog B' },
+      { author: 'Author B', title: 'Blog C' },
+      { author: 'Author B', title: 'Blog D' }
+    ]
+    const result = listHelper.mostBlogs(listWithTie)
+    assert.ok(result.author === 'Author A' || result.author === 'Author B')
+    assert.strictEqual(result.blogs, 2)
+  })
+
+  test('when list is empty returns null', () => {
+    const result = listHelper.mostBlogs([])
+    assert.strictEqual(result, null)
   })
 })
