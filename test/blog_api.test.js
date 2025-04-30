@@ -155,3 +155,56 @@ afterAll(async () => {
   await mongoose.connection.close()
   await mongoServer.stop()
 })
+
+describe('updating a blog', () => {
+  test('succeeds in updating likes of an existing blog', async () => {
+    const blogsAtStartResponse = await api.get('/api/blogs')
+    const blogsAtStart = blogsAtStartResponse.body
+    const blogToUpdate = blogsAtStart[0]
+
+    const updatedLikes = blogToUpdate.likes + 1
+
+    const response = await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send({ likes: updatedLikes })
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    expect(response.body.likes).toBe(updatedLikes)
+
+    const blogsAtEndResponse = await api.get('/api/blogs')
+    const blogsAtEnd = blogsAtEndResponse.body
+    const updatedBlog = blogsAtEnd.find(b => b.id === blogToUpdate.id)
+    expect(updatedBlog.likes).toBe(updatedLikes)
+  })
+
+  test('fails with status code 404 if blog does not exist', async () => {
+    const validNonexistingId = await new Blog({ title: 'willremovethissoon', url: 'http://tempurl.com' }).save()
+    await Blog.findByIdAndRemove(validNonexistingId._id)
+
+    await api
+      .put(`/api/blogs/${validNonexistingId._id}`)
+      .send({ likes: 10 })
+      .expect(404)
+  })
+
+  test('fails with status code 400 if id is invalid', async () => {
+    const invalidId = '12345invalidid'
+
+    await api
+      .put(`/api/blogs/${invalidId}`)
+      .send({ likes: 10 })
+      .expect(400)
+  })
+
+  test('fails with status code 400 if likes is missing', async () => {
+    const blogsAtStartResponse = await api.get('/api/blogs')
+    const blogsAtStart = blogsAtStartResponse.body
+    const blogToUpdate = blogsAtStart[0]
+
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send({})
+      .expect(400)
+  })
+})

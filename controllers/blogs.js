@@ -58,4 +58,28 @@ router.delete('/:id', async (request, response) => {
   }
 })
 
+router.put('/:id', async (request, response) => {
+  try {
+    const { likes } = request.body
+    if (likes === undefined) {
+      return response.status(400).json({ error: 'Likes count is required' })
+    }
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      request.params.id,
+      { likes },
+      { new: true, runValidators: true, context: 'query' }
+    )
+    if (!updatedBlog) {
+      return response.status(404).json({ error: 'Blog not found' })
+    }
+    response.json(updatedBlog)
+  } catch (error) {
+    console.error('Error updating blog:', error)
+    response.status(400).json({ 
+      error: 'Bad request',
+      details: error.message 
+    })
+  }
+})
+
 module.exports = router
