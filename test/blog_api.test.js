@@ -114,6 +114,43 @@ test('blog without url is not added and returns 400', async () => {
     .expect(400)
 })
 
+describe('deletion of a blog', () => {
+  test('succeeds with status code 204 if id is valid', async () => {
+    const blogsAtStartResponse = await api.get('/api/blogs')
+    const blogsAtStart = blogsAtStartResponse.body
+    const blogToDelete = blogsAtStart[0]
+
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .expect(204)
+
+    const blogsAtEndResponse = await api.get('/api/blogs')
+    const blogsAtEnd = blogsAtEndResponse.body
+
+    expect(blogsAtEnd).toHaveLength(blogsAtStart.length - 1)
+
+    const titles = blogsAtEnd.map(b => b.title)
+    expect(titles).not.toContain(blogToDelete.title)
+  })
+
+  test('fails with status code 404 if blog does not exist', async () => {
+    const validNonexistingId = await new Blog({ title: 'willremovethissoon', url: 'http://tempurl.com' }).save()
+    await Blog.findByIdAndRemove(validNonexistingId._id)
+
+    await api
+      .delete(`/api/blogs/${validNonexistingId._id}`)
+      .expect(404)
+  })
+
+  test('fails with status code 400 if id is invalid', async () => {
+    const invalidId = '12345invalidid'
+
+    await api
+      .delete(`/api/blogs/${invalidId}`)
+      .expect(400)
+  })
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
   await mongoServer.stop()
