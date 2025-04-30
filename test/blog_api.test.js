@@ -15,16 +15,13 @@ beforeAll(async () => {
   await connectToDatabase()
 })
 
-beforeEach((done) => {
-  Blog.deleteMany({})
-    .then(() => {
-      const initialBlogs = [
-        { title: 'First blog', author: 'Author1', url: 'http://example.com/1', likes: 1 },
-        { title: 'Second blog', author: 'Author2', url: 'http://example.com/2', likes: 2 }
-      ]
-      return Blog.insertMany(initialBlogs)
-    })
-    .then(() => done())
+beforeEach(async () => {
+  await Blog.deleteMany({})
+  const initialBlogs = [
+    { title: 'First blog', author: 'Author1', url: 'http://example.com/1', likes: 1 },
+    { title: 'Second blog', author: 'Author2', url: 'http://example.com/2', likes: 2 }
+  ]
+  await Blog.insertMany(initialBlogs)
 })
 
 test('blogs are returned as json and correct amount', async () => {
@@ -47,6 +44,32 @@ test('unique identifier property of the blog posts is named id', async () => {
     expect(blog.id).toBeDefined()
     expect(blog._id).toBeUndefined()
   })
+})
+
+test('a valid blog can be added', async () => {
+  const newBlog = {
+    title: 'New blog',
+    author: 'Author3',
+    url: 'http://example.com/3',
+    likes: 3
+  }
+
+  const blogsAtStartResponse = await api.get('/api/blogs')
+  const blogsAtStart = blogsAtStartResponse.body
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const blogsAtEndResponse = await api.get('/api/blogs')
+  const blogsAtEnd = blogsAtEndResponse.body
+
+  expect(blogsAtEnd).toHaveLength(blogsAtStart.length + 1)
+
+  const titles = blogsAtEnd.map(b => b.title)
+  expect(titles).toContain(newBlog.title)
 })
 
 afterAll(async () => {
