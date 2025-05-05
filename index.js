@@ -7,6 +7,9 @@ const { PORT, MONGODB_URI, NODE_ENV } = require('./utils/config')
 app.use(express.json())
 app.use('/api/blogs', require('./controllers/blogs'))
 
+const usersRouter = require('./controllers/users')
+app.use('/api/users', usersRouter)
+
 const connectToDatabase = async () => {
   try {
     const mongoUrl = MONGODB_URI || 'mongodb://localhost:27017/bloglist'
